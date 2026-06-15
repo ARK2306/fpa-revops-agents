@@ -1,0 +1,35 @@
+from dotenv import load_dotenv
+from openai import OpenAI
+import os
+
+load_dotenv()
+
+MODEL_1 = "nvidia/nemotron-3-ultra-550b-a55b:free"
+MODEL_2 = "nex-agi/nex-n2-pro:free"
+MODEL_3 = "poolside/laguna-m.1:free"
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY")
+)
+
+def complete(
+        messages: list[dict],
+        model: str = MODEL_1,
+        temperature: float = 0.0,
+        max_tokens: int = 1000
+) -> str:
+    completion = client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        messages=messages
+
+    )
+    return completion.choices[0].message.content
+
+if __name__ == "__main__":
+    print(complete([{"role": "user", "content": "what is the meaning of life, answer in 1 line"}]))
+
+    
+
+
