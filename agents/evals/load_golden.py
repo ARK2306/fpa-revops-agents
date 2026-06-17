@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from schemas import GoldenCase
+from evals.schemas import GoldenCase
 
 def load_golden(path: Path) -> list[GoldenCase]:
     cases = []

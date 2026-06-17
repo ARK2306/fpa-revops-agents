@@ -31,7 +31,14 @@ class GoldenCase(BaseModel):
     input: CaseInput
     expected_output: ExpectedOutput
 
-
+class AgentOutput(BaseModel):
+    case_id: str
+    action: Literal["flag", "do_nothing", "escalate"]
+    driver_type: Literal["price_change", "one_time_item", "volume_change", 
+                         "timing_accrual", "data_error", "none"]
+    magnitude: float
+    description: str
+    grounding: Grounding
 
 
 
