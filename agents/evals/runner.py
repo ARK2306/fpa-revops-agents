@@ -18,24 +18,16 @@ def score_detection(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict
         "do_nothing": 0
     }
     y_true = []
-    for case in cases:
-        action = case.expected_output.action
-        action = ACTIONS[action]
-        y_true.append(action)
-
     y_pred = []
     for output in outputs:
-        action = output.action
-        action = ACTIONS[action]
-        y_pred.append(action)
+        case = next(c for c in cases if c.case_id == output.case_id)
+        y_true.append(ACTIONS[case.expected_output.action])
+        y_pred.append(ACTIONS[output.action])
     
-    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="binary")
-
-    return {
-       "precision": precision,
-       "recall": recall,
-       "f1":f1
-    }
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        y_true, y_pred, average="binary", zero_division=0
+    )
+    return {"precision": precision, "recall": recall, "f1": f1}
 
 def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
     # LLM-as-judge for flagged cases only
@@ -66,7 +58,13 @@ def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
         ]
         
         response = complete(messages)
-        result = json.loads(response)
+        clean = response.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        if not clean:
+            score.append(0.0)
+            details.append("LLM judge returned empty response")
+            cases_judged += 1
+            continue
+        result = json.loads(clean)
         cases_judged += 1
         score.append(result["score"])
         details.append(result["reason"])
@@ -81,7 +79,15 @@ def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
 def main():
     cases = load_golden("data/golden.jsonl")
     
-    outputs = [run_case(case, run_fpa_agent) for case in cases]
+    outputs = []
+    for case in cases:
+        print(f"Running {case.case_id}...")
+        try:
+            result = run_case(case, run_fpa_agent)
+            outputs.append(result)
+            print(f"  OK: {result.action}")
+        except Exception as e:
+            print(f"  FAILED: {e}")
     
     detection = score_detection(cases, outputs)
     driver = score_driver(cases, outputs)

@@ -41,7 +41,11 @@ def build_case_from_driver(case_id, driver, transactions_df, n=6):
         (transactions_df["account_id"] == account_id) &
         (transactions_df["period"] == period)
     ].head(n)
-    
+
+    if driver["driver_type"] == "one_time_item":
+        special = transactions_df[transactions_df["transaction_id"] == "T999001"]
+        tx = pd.concat([tx, special]).drop_duplicates(subset="transaction_id")
+        
     transactions = tx.to_dict(orient="records")
     
     CASE_TYPE_MAP = {
@@ -57,7 +61,7 @@ def build_case_from_driver(case_id, driver, transactions_df, n=6):
         "one_time_item":  "flag",
         "volume_change":  "flag",
         "timing_accrual": "escalate",
-        "data_error":     "do_nothing",
+        "data_error":     "escalate",
     }
 
     return dict(
@@ -91,7 +95,7 @@ def build_do_nothing_case(case_id, period, account_id, budget, transactions_df):
 def main():
     transactions_df, answer_key = load_data()
     cases = []
-    case_id_counter = 4
+    case_id_counter = 1
     DO_NOTHING_PERIODS = [
     ("2025-02", "4000", 150_000),
     ("2025-07", "6100", -25_000),
@@ -112,7 +116,7 @@ def main():
         cases.append(case)
         case_id_counter += 1
 
-    with open("data/golden.jsonl", "a") as f:
+    with open("data/golden.jsonl", "w") as f:
         for case in cases:
             f.write(json.dumps(case) + "\n")
 

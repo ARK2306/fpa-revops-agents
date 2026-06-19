@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
-from openai import OpenAI
+from langfuse.openai import OpenAI
 import os
 
 load_dotenv()
 
-MODEL_1 = "nvidia/nemotron-3-ultra-550b-a55b:free"
+MODEL_1 = "google/gemma-4-31b-it:free"
 MODEL_2 = "nex-agi/nex-n2-pro:free"
 MODEL_3 = "poolside/laguna-m.1:free"
 

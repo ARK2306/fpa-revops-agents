@@ -65,10 +65,10 @@ def build_baseline_transactions():
         period = row["period"]
         budget_amount = row["budget"]
 
-        n = random.randint(8, 20)
+        n = random.randint(6, 12)
         noise = np.random.uniform(-0.05, 0.05)
         total = budget_amount * (1 + noise)
-        weights = np.random.dirichlet(np.ones(n))
+        weights = np.random.dirichlet(np.ones(n)*3)
         amounts = weights * total
         year, month = int(period.split("-")[0]), int(period.split("-")[1])
         for amt in amounts:
@@ -174,10 +174,10 @@ def save_outputs(budget_df, transactions_df, answer_key):
 # ── Sanity check ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     budget      = build_budget()
-    # baseline    = build_baseline_transactions()
-    # transactions, answer_key = inject_drivers(baseline)
-    # save_outputs(budget, transactions, answer_key)
-    df = pd.read_csv("transactions.csv")
+    baseline    = build_baseline_transactions()
+    transactions, answer_key = inject_drivers(baseline)
+    save_outputs(budget, transactions, answer_key)
+    df = pd.read_csv("data/transactions.csv")
     df["account_id"] = df["account_id"].astype(str)
     actuals = df[df["period"] == "2025-01"].groupby("account_id")["amount"].sum().reset_index()
     jan_budget = budget[budget["period"] == "2025-01"]
