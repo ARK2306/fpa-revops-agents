@@ -34,7 +34,7 @@ PERIODS = [f"2025-{m:02d}" for m in range(1, 13)]
 MONTHLY_BUDGET = {
     "4000": 150_000,   # Software Revenue
     "4100":  40_000,   # Services Revenue
-    "5000": -30_000,   # Hosting & Infra  (negative = cost)
+    "5000": -30_000,   # Hosting & Infra  
     "5100":  -8_000,   # Third-Party APIs
     "6000": -80_000,   # Salaries
     "6100": -25_000,   # Sales & Marketing
@@ -65,14 +65,11 @@ def build_baseline_transactions():
         period = row["period"]
         budget_amount = row["budget"]
 
-        n = random.randint(6, 12)
-        noise = np.random.uniform(-0.05, 0.05)
-        total = budget_amount * (1 + noise)
-        weights = np.random.dirichlet(np.ones(n)*3)
-        amounts = weights * total
+        n = random.randint(8, 10)
+        amounts = [(budget_amount / n) * (1 + np.random.uniform(-0.1, 0.1)) for _ in range(n)]
         year, month = int(period.split("-")[0]), int(period.split("-")[1])
         for amt in amounts:
-            day = random.randint(1, 28)  # 28 is safe for all months
+            day = random.randint(1, 28) 
             row_dict = {
                 "transaction_id": f"T{tx_counter:06d}",
                 "date": f"{year}-{month:02d}-{day:02d}",
@@ -117,36 +114,43 @@ def inject_drivers(transactions_df):
         "description": "Single legal settlement posted to Sales & Marketing"
     })
 
-    vc = df.loc[(df["account_id"] == "4100") & (df["period"] == "2025-09")]
-    vc_sample = vc.sample(frac=VOLUME_SPIKE_FRAC)
-    df = pd.concat([df, vc_sample], ignore_index=True)
-    duplicates = df.duplicated(subset='transaction_id')
-    n_dupes = duplicates.sum()
-    new_ids = [f"T{999100 + i:06d}" for i in range(n_dupes)]
-    df.loc[duplicates, "transaction_id"] = new_ids
-    mag = vc_sample["amount"].sum()
+    vc_rows = pd.DataFrame([
+    {"transaction_id": "T999020", "date": "2025-09-03", "account_id": "4100", "period": "2025-09", "amount": 4_200.0, "description": "Implementation fee"},
+    {"transaction_id": "T999021", "date": "2025-09-08", "account_id": "4100", "period": "2025-09", "amount": 5_800.0, "description": "Professional services invoice"},
+    {"transaction_id": "T999022", "date": "2025-09-12", "account_id": "4100", "period": "2025-09", "amount": 3_600.0, "description": "Consulting engagement"},
+    {"transaction_id": "T999023", "date": "2025-09-19", "account_id": "4100", "period": "2025-09", "amount": 6_100.0, "description": "Implementation fee"},
+    {"transaction_id": "T999024", "date": "2025-09-24", "account_id": "4100", "period": "2025-09", "amount": 4_750.0, "description": "Professional services invoice"},
+])
+    df = pd.concat([df, vc_rows], ignore_index=True)
+    magnitude = float(vc_rows["amount"].sum())
     answer_key.append({
-    "account_id":  "4100",
-    "period":      "2025-09",
-    "driver_type": "volume_change",
-    "magnitude":   float(mag),
-    "description": "Volume spike — ~50% more invoices than normal in Services Revenue"
-})
-    ta = df.loc[(df["account_id"] == "5000") & (df["period"] == "2025-10")]
-    ta_sample = ta.sample(n=5)
-    df.loc[ta_sample.index, 'period'] = "2025-11"
-    magnitude = float(df.loc[ta_sample.index, "amount"].sum())
-    answer_key.append({
-    "account_id":  "5000",
-    "period":      "2025-11",
-    "driver_type": "timing_accrual",
-    "magnitude":   magnitude,
-    "description": "5 Hosting & Infra transactions dated in October posted to November period — date/period mismatch is the signal"
+        "account_id":  "4100",
+        "period":      "2025-09",
+        "driver_type": "volume_change",
+        "magnitude":   magnitude,
+        "description": "Volume spike — ~50% more invoices than normal in Services Revenue"
     })
-    de = df.loc[(df["account_id"] == "4100") & (df["period"] == "2025-08")]
-    de_sample = de.sample(n=3)
-    df.loc[de_sample.index, "account_id"] = "4000"
-    magnitude = float(df.loc[de_sample.index, "amount"].sum())
+    ta_rows = pd.DataFrame([
+    {"transaction_id": "T999030", "date": "2025-10-05", "account_id": "5000", "period": "2025-11", "amount": -10_200.0, "description": "AWS invoice"},
+    {"transaction_id": "T999031", "date": "2025-10-14", "account_id": "5000", "period": "2025-11", "amount":  -9_300.0, "description": "GCP compute bill"},
+    {"transaction_id": "T999032", "date": "2025-10-22", "account_id": "5000", "period": "2025-11", "amount": -10_500.0, "description": "Cloudflare charge"},
+])
+    df = pd.concat([df, ta_rows], ignore_index=True)
+    magnitude = float(ta_rows["amount"].sum())  # -30_000.0
+    answer_key.append({
+        "account_id":  "5000",
+        "period":      "2025-11",
+        "driver_type": "timing_accrual",
+        "magnitude":   magnitude,
+        "description": "3 Hosting & Infra transactions dated in October posted to November period — date/period mismatch is the signal"
+    })
+    de_rows = pd.DataFrame([
+    {"transaction_id": "T999010", "date": "2025-08-07", "account_id": "4000", "period": "2025-08", "amount": 10_200.0, "description": "Consulting engagement"},
+    {"transaction_id": "T999011", "date": "2025-08-14", "account_id": "4000", "period": "2025-08", "amount":  9_800.0, "description": "Implementation fee"},
+    {"transaction_id": "T999012", "date": "2025-08-21", "account_id": "4000", "period": "2025-08", "amount": 10_500.0, "description": "Professional services invoice"},
+])
+    df = pd.concat([df, de_rows], ignore_index=True)
+    magnitude = float(de_rows["amount"].sum())  # 30_500.0 — guaranteed material
     answer_key.append({
         "account_id":  "4000",
         "period":      "2025-08",

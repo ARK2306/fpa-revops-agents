@@ -3,7 +3,7 @@
     "account_id": "4000",
     "period": "2025-03",
     "driver_type": "price_change",
-    "magnitude": 54648.93211091362,
+    "magnitude": 51666.5722300683,
     "description": "All Software Revenue lines ~35% above budget"
   },
   {
@@ -17,21 +17,21 @@
     "account_id": "4100",
     "period": "2025-09",
     "driver_type": "volume_change",
-    "magnitude": 18681.842676114476,
+    "magnitude": 24450.0,
     "description": "Volume spike \u2014 ~50% more invoices than normal in Services Revenue"
   },
   {
     "account_id": "5000",
     "period": "2025-11",
     "driver_type": "timing_accrual",
-    "magnitude": -18562.59561540773,
-    "description": "5 Hosting & Infra transactions dated in October posted to November period \u2014 date/period mismatch is the signal"
+    "magnitude": -30000.0,
+    "description": "3 Hosting & Infra transactions dated in October posted to November period \u2014 date/period mismatch is the signal"
   },
   {
     "account_id": "4000",
     "period": "2025-08",
     "driver_type": "data_error",
-    "magnitude": 8709.523278519086,
+    "magnitude": 30500.0,
     "description": "3 Services Revenue transactions miscoded to Software Revenue \u2014 description mismatch is the signal"
   }
 ]
