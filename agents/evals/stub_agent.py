@@ -7,5 +7,6 @@ def stub_agent(case: CaseInput) -> AgentOutput:
         driver_type="none",
         magnitude=0.0,
         description="stub: always do nothing",
-        grounding=Grounding(transaction_ids=[], signal="stub")
+        grounding=Grounding(transaction_ids=[], signal="stub"),
+        confidence=0.0
     )

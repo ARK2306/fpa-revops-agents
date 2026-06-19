@@ -1,15 +1,13 @@
 from evals.schemas import GoldenCase, AgentOutput
-from evals.stub_agent import stub_agent
 from evals.load_golden import load_golden
 from sklearn.metrics import precision_recall_fscore_support
 from core.llm_client import complete
+from domain_fpa.agent import run_fpa_agent
 import json
 
 def run_case(case: GoldenCase, agent_fn) -> AgentOutput:
     # calls agent_fn with case.input, injects case_id, returns AgentOutput
-    result = agent_fn(case.input)
-    result = result.model_copy(update={"case_id": case.case_id})
-
+    result = agent_fn(case.case_id, case.input)
     return result
 
 def score_detection(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
@@ -83,7 +81,7 @@ def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
 def main():
     cases = load_golden("data/golden.jsonl")
     
-    outputs = [run_case(case, stub_agent) for case in cases]
+    outputs = [run_case(case, run_fpa_agent) for case in cases]
     
     detection = score_detection(cases, outputs)
     driver = score_driver(cases, outputs)
@@ -96,6 +94,7 @@ def main():
     print("\n=== Driver Scores ===")
     print(f"Cases judged: {driver['cases_judged']}")
     print(f"Mean score:   {driver['mean_score']:.2f}")
+    print(f"Details: {driver['details']}")
     for d in driver['details']:
         print(f"  - {d}")
 

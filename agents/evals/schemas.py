@@ -39,6 +39,7 @@ class AgentOutput(BaseModel):
     magnitude: float
     description: str
     grounding: Grounding
+    confidence: float
 
 
 

@@ -27,6 +27,20 @@ def complete(
     )
     return completion.choices[0].message.content
 
+def complete_with_tools(
+    messages: list[dict],
+    tools: list[dict],
+    model: str = MODEL_1,
+    temperature: float = 0.0,
+) -> object:
+    response = client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        messages=messages,
+        tools=tools,
+    )
+    return response.choices[0].message
+
 if __name__ == "__main__":
     print(complete([{"role": "user", "content": "what is the meaning of life, answer in 1 line"}]))
 
