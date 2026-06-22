@@ -18,7 +18,10 @@ def run_agent(case_id: str, messages: list[dict], tools: list[dict], tool_functi
             args = json.loads(tool_call.function.arguments)
 
             if name == "submit":
-                grounding = Grounding(**args.pop("grounding"))
+                raw_grounding = args.pop("grounding")
+                if isinstance(raw_grounding, str):
+                    raw_grounding = json.loads(raw_grounding)
+                grounding = Grounding(**raw_grounding)
                 return AgentOutput(case_id=case_id, grounding=grounding, **args)
 
             else:

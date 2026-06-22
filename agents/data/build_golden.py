@@ -17,14 +17,9 @@ MONTHLY_BUDGET = {
 }
 
 def load_data():
-    csv_path = "data/transactions.csv"
-    json_path = "data/answer_key.json"
-    transactions = pd.read_csv(csv_path)
+    transactions = pd.read_csv("data/transactions.csv")
     transactions["account_id"] = transactions["account_id"].astype(str)
-    with open(json_path) as f:
-        ans_key = json.load(f)
-
-    return transactions, ans_key
+    return transactions
 
 def compute_variance(transactions, budget):
     actual = sum(t["amount"] for t in transactions)
@@ -93,25 +88,26 @@ def build_do_nothing_case(case_id, period, account_id, budget, transactions_df):
     return case
 
 def main():
-    transactions_df, answer_key = load_data()
+    transactions_df = load_data()
     cases = []
-    case_id_counter = 1
+    file =[]
+    case_id_counter = 8
     DO_NOTHING_PERIODS = [
     ("2025-02", "4000", 150_000),
     ("2025-07", "6100", -25_000),
 ]
-
-    for driver in answer_key:
-        case = build_case_from_driver(f"fpa_{case_id_counter:03d}", driver, transactions_df)
-        cases.append(case)
-        case_id_counter += 1
+    with open("data/static_cases.jsonl") as f:
+        for line in f:
+            file.append(json.loads(line))
     
+    cases = file + cases
 
     for period, account_id, budget in DO_NOTHING_PERIODS:
         tx = transactions_df[
-            (transactions_df["account_id"] == account_id) &
-            (transactions_df["period"] == period)
-        ].head(N_TRANSACTIONS)
+    (transactions_df["account_id"] == account_id) &
+    (transactions_df["period"] == period)
+].head(N_TRANSACTIONS)
+
         case = build_do_nothing_case(f"fpa_{case_id_counter:03d}", period, account_id, budget, tx)
         cases.append(case)
         case_id_counter += 1
