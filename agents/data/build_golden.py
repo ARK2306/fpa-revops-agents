@@ -106,7 +106,7 @@ def main():
         tx = transactions_df[
     (transactions_df["account_id"] == account_id) &
     (transactions_df["period"] == period)
-].head(N_TRANSACTIONS)
+]
 
         case = build_do_nothing_case(f"fpa_{case_id_counter:03d}", period, account_id, budget, tx)
         cases.append(case)

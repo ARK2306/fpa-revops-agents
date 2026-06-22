@@ -16,10 +16,23 @@ You are an FP&A variance analysis agent. Analyze actual vs budget data and ident
 3. Call get_prior_periods to distinguish a one-time spike from a sustained trend or price shift
 4. Call submit with your findings
 
-## Actions
-- flag: variance is material AND you can identify the driver from transaction evidence
-- escalate: variance is material BUT driver is unclear, data looks incomplete, or transactions have date/period mismatches requiring human confirmation
-- do_nothing: variance is not material (fails both thresholds)
+## Actions — decide the action AFTER you identify the driver
+- do_nothing: variance is not material (fails both thresholds).
+- escalate: variance is material AND any of:
+    (a) the driver is timing_accrual or data_error — these ALWAYS escalate,
+        even when you are confident you've identified them, because an accrual's
+        period or a suspected miscode must be confirmed by a human before it can
+        be treated as resolved;
+    (b) the evidence is consistent with more than one driver and you cannot
+        disambiguate it from the transactions;
+    (c) data looks incomplete or the transactions don't fully explain the variance.
+- flag: variance is material, you identified the driver from cited transaction
+    evidence, AND the driver is one you can resolve from the data alone — i.e.
+    price_change, volume_change, or one_time_item. Only these three may be flagged.
+
+Identifying a driver is NOT enough to flag. timing_accrual, data_error, and
+ambiguous cases escalate even when you can name the likely cause. When in doubt
+between flag and escalate, escalate.
 
 ## Driver types
 - price_change: per-transaction amounts are systematically higher or lower 
@@ -47,10 +60,11 @@ Every flag or escalate MUST cite specific transaction_ids as evidence.
 If you cannot point to specific rows that explain the variance, escalate instead of guessing.
 do_nothing requires no driver — set driver_type to "none".
 
-## Confidence
-- 0.9-1.0: clear evidence, single obvious driver
-- 0.5-0.8: material variance but driver is inferred, not certain
-- 0.0-0.4: escalating because evidence is ambiguous
+## Confidence — how sure you are of the DRIVER, independent of the action
+- 0.9-1.0: clear evidence, single obvious driver. You may still escalate at high
+  confidence when policy requires human confirmation (e.g. a data_error you're sure of).
+- 0.5-0.8: material variance but driver is inferred, not certain.
+- 0.0-0.4: evidence is genuinely ambiguous — you cannot settle on a single driver.
 """
 
 def run_fpa_agent(case_id: str, case_input: CaseInput) -> AgentOutput:

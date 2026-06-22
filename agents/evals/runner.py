@@ -3,6 +3,7 @@ from evals.load_golden import load_golden
 from sklearn.metrics import precision_recall_fscore_support
 from core.llm_client import complete
 from domain_fpa.agent import run_fpa_agent
+from collections import Counter
 import json
 
 def run_case(case: GoldenCase, agent_fn) -> AgentOutput:
@@ -75,6 +76,30 @@ def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
         "details": details
     }
 
+def score_actions(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
+    CLASSES = ["do_nothing", "flag", "escalate"]
+    matrix = Counter()  # keyed by (expected_action, predicted_action)
+
+    for output in outputs:
+        case = next(c for c in cases if c.case_id == output.case_id)
+        expected = case.expected_output.action
+        predicted = output.action
+        matrix[(expected, predicted)] += 1
+
+    total = sum(matrix.values())
+    correct = sum(matrix[(c, c)] for c in CLASSES)          # the diagonal
+    accuracy = correct / total if total else 0.0
+
+    esc_total = sum(matrix[("escalate", p)] for p in CLASSES)  # the escalate row
+    escalate_recall = matrix[("escalate", "escalate")] / esc_total if esc_total else 0.0
+
+    return {
+        "matrix": matrix,
+        "classes": CLASSES,
+        "accuracy": accuracy,
+        "escalate_recall": escalate_recall,
+    }
+
  
 def main():
     import argparse
@@ -105,6 +130,15 @@ def main():
 
     detection = score_detection(cases, outputs)
     driver = score_driver(cases, outputs)
+    actions = score_actions(cases, outputs)
+    
+    print("\n=== Action Confusion Matrix (rows=expected, cols=predicted) ===")
+    classes = actions["classes"]
+    print(f"{'':<12}" + "".join(f"{c:>12}" for c in classes))
+    for t in classes:
+        print(f"{t:<12}" + "".join(f"{actions['matrix'][(t, p)]:>12}" for p in classes))
+    print(f"\nAction accuracy: {actions['accuracy']:.3f}")
+    print(f"Escalate recall: {actions['escalate_recall']:.2f}")
 
     print("=== Detection Scores ===")
     print(f"Precision: {detection['precision']:.2f}")
