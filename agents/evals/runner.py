@@ -77,8 +77,22 @@ def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
 
  
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cases", type=str, default=None,
+        help="Comma-separated case IDs to run, e.g. --cases fpa_014,fpa_015,fpa_016")
+    parser.add_argument("--limit", type=int, default=None,
+        help="Run only the first N cases")
+    args = parser.parse_args()
+
     cases = load_golden("data/golden.jsonl")
-    
+
+    if args.cases:
+        ids = set(args.cases.split(","))
+        cases = [c for c in cases if c.case_id in ids]
+    elif args.limit:
+        cases = cases[:args.limit]
+
     outputs = []
     for case in cases:
         print(f"Running {case.case_id}...")
@@ -88,15 +102,15 @@ def main():
             print(f"  OK: {result.action}")
         except Exception as e:
             print(f"  FAILED: {e}")
-    
+
     detection = score_detection(cases, outputs)
     driver = score_driver(cases, outputs)
-    
+
     print("=== Detection Scores ===")
     print(f"Precision: {detection['precision']:.2f}")
     print(f"Recall:    {detection['recall']:.2f}")
     print(f"F1:        {detection['f1']:.2f}")
-    
+
     print("\n=== Driver Scores ===")
     print(f"Cases judged: {driver['cases_judged']}")
     print(f"Mean score:   {driver['mean_score']:.2f}")
