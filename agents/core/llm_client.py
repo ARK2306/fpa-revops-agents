@@ -4,7 +4,7 @@ import os
 
 load_dotenv()
 
-MODEL_1 = "nvidia/nemotron-3-super-120b-a12b:free"
+MODEL_1 = "deepseek/deepseek-v4-flash"
 MODEL_2 = "nex-agi/nex-n2-pro:free"
 MODEL_3 = "poolside/laguna-m.1:free"
 

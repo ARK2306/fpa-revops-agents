@@ -45,14 +45,18 @@ between flag and escalate, escalate.
   and period. To detect: compare row count in current period vs prior periods 
   using get_transactions. If count is up significantly but per-row amounts 
   are consistent with history, that's volume.
-- one_time_item: single anomalous transaction not in budget
+- one_time_item: single anomalous transaction not in budget, with a specific \
+  enough description to identify what it is. If the description is generic (e.g. "Miscellaneous charges") and you cannot
+identify the nature of the item, escalate instead of flagging. Legal or
+financial settlement language (e.g. "Settlement payment", "Settlement fee")
+always escalates — settlements require human confirmation regardless of amount.
 - timing_accrual: transactions dated in a different period than they are posted to
-- - data_error: description vocabulary does not match the account. To detect: 
-  look at the descriptions in get_transactions and ask whether they belong 
-  to this account type. For example, "Consulting engagement" or 
-  "Implementation fee" in a Software Revenue account is a miscode — those 
-  are Services Revenue descriptions. If the amounts look normal but the 
-  descriptions are wrong, escalate for human review.
+- data_error: description vocabulary belongs to a clearly different account \
+  category. To detect: the descriptions must use terminology from a wrong \
+  domain entirely — e.g. "Payroll expense" or "Employee benefits" in \
+  a Software Revenue account. Unfamiliar or generic descriptions alone are \
+  NOT data_error. Only escalate for data_error when the vocabulary mismatch \
+  is unambiguous.
 - none: no material variance
 
 ## Grounding rule — CRITICAL

@@ -32,6 +32,7 @@ QUERY_ACTUALS_SCHEMA = {
         "description": "Get the summed actual amounts per account for a given period. Use this first to find which accounts have material variances.",
         "parameters": {
             "type": "object",
+            "required": ["period", "account_id"],
             "properties": {
                 "period": {
                     "type": "string",

@@ -76,7 +76,7 @@ def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
         "details": details
     }
 
-def score_actions(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
+def score_actions(cases: list[GoldenCase], outputs: list[AgentOutput], n_total: int) -> dict:
     CLASSES = ["do_nothing", "flag", "escalate"]
     matrix = Counter()  # keyed by (expected_action, predicted_action)
 
@@ -88,7 +88,7 @@ def score_actions(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
 
     total = sum(matrix.values())
     correct = sum(matrix[(c, c)] for c in CLASSES)          # the diagonal
-    accuracy = correct / total if total else 0.0
+    accuracy = correct / n_total if n_total else 0.0
 
     esc_total = sum(matrix[("escalate", p)] for p in CLASSES)  # the escalate row
     escalate_recall = matrix[("escalate", "escalate")] / esc_total if esc_total else 0.0
@@ -119,6 +119,7 @@ def main():
         cases = cases[:args.limit]
 
     outputs = []
+    failures=[]
     for case in cases:
         print(f"Running {case.case_id}...")
         try:
@@ -127,10 +128,14 @@ def main():
             print(f"  OK: {result.action}")
         except Exception as e:
             print(f"  FAILED: {e}")
+            failures.append(case.case_id)
 
     detection = score_detection(cases, outputs)
     driver = score_driver(cases, outputs)
-    actions = score_actions(cases, outputs)
+    actions = score_actions(cases, outputs, n_total=len(cases))
+
+    if failures:
+        print(f"\nCRASHED ({len(failures)}): {failures}")
     
     print("\n=== Action Confusion Matrix (rows=expected, cols=predicted) ===")
     classes = actions["classes"]
