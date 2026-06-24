@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS case_memory (
     confirmed_driver  TEXT NOT NULL,
     confirmed_action  TEXT NOT NULL,
     description TEXT NOT NULL,
+    domain      TEXT NOT NULL DEFAULT 'fpa',
     embedding   vector(384) NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );

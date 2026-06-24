@@ -22,7 +22,8 @@ def complete(
     completion = client.chat.completions.create(
         model=model,
         temperature=temperature,
-        messages=messages
+        messages=messages,
+        max_tokens=max_tokens
 
     )
     return completion.choices[0].message.content
@@ -32,12 +33,14 @@ def complete_with_tools(
     tools: list[dict],
     model: str = MODEL_1,
     temperature: float = 0.0,
+    max_tokens: int = 3000
 ) -> object:
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
         messages=messages,
         tools=tools,
+        max_tokens=max_tokens
     )
     return response.choices[0].message
 
