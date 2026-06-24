@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: agents-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fpa
+      POSTGRES_USER: fpa
+      POSTGRES_PASSWORD: fpa
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+volumes:
+  pgdata:
