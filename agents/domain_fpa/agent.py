@@ -122,10 +122,10 @@ then get_transactions to find the driver. Submit your findings using the submit 
         {"role": "system", "content": system_with_memory},
         {"role": "user", "content": user_message}
     ]
-    
-    return run_agent(
-        case_id=case_id,
-        messages=messages,
-        tools=ALL_TOOLS,
-        tool_functions=TOOL_FUNCTIONS
-    )
+    output, _ = run_agent(
+    case_id=case_id,
+    messages=messages,
+    tools=ALL_TOOLS,
+    tool_functions=TOOL_FUNCTIONS
+)
+    return output

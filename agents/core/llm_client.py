@@ -48,7 +48,7 @@ def complete_with_tools(
     model: str = MODEL_1,
     temperature: float = 0.0,
     max_tokens: int = 3000
-) -> object:
+) -> tuple:
     response = client.chat.completions.create(
         model=model,
         temperature=temperature,
@@ -56,7 +56,7 @@ def complete_with_tools(
         tools=tools,
         max_tokens=max_tokens
     )
-    return response.choices[0].message
+    return response.choices[0].message, response.usage
 
 if __name__ == "__main__":
     print(complete([{"role": "user", "content": "what is the meaning of life, answer in 1 line"}]))

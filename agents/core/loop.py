@@ -3,8 +3,24 @@ from evals.schemas import AgentOutput, Grounding
 from core.llm_client import complete_with_tools
 from langfuse import observe, propagate_attributes
 from pydantic import ValidationError
+from dataclasses import dataclass
 
 MAX_ITERS = 10
+
+
+@dataclass
+class RunUsage:
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    cost_usd: float = 0.0
+    llm_calls: int = 0
+
+    def add(self, usage) -> None:
+        self.prompt_tokens += usage.prompt_tokens
+        self.completion_tokens += usage.completion_tokens
+        self.cost_usd += getattr(usage, 'cost', 0.0)
+        self.llm_calls += 1
+        
 
 @observe()
 def run_agent(case_id: str, messages: list[dict], tools: list[dict], tool_functions: dict) -> AgentOutput:
@@ -13,9 +29,12 @@ def run_agent(case_id: str, messages: list[dict], tools: list[dict], tool_functi
         session_id=case_id,
         tags=["fpa"],
     ):
+            usage_acc = RunUsage()
     
             for i in range(MAX_ITERS):
-                message = complete_with_tools(messages,tools)
+                message, usage = complete_with_tools(messages,tools)
+                usage_acc.add(usage)
+
                 if not message.tool_calls:
                     break
                 
@@ -41,7 +60,7 @@ def run_agent(case_id: str, messages: list[dict], tools: list[dict], tool_functi
                                 confidence=0.0,
                                 description=f"Malformed output from model: {e}",
                                 grounding=Grounding(transaction_ids=[], signal="validation_failed")
-                            )
+                            ), usage_acc
                         if output.action in ("flag", "escalate") and not output.grounding.transaction_ids:
                             return AgentOutput(
                                 case_id=case_id,
@@ -51,8 +70,8 @@ def run_agent(case_id: str, messages: list[dict], tools: list[dict], tool_functi
                                 confidence=0.3,
                                 description=output.description + " [guardrail: no transaction IDs cited — escalated for human review]",
                                 grounding=Grounding(transaction_ids=[], signal="grounding_guardrail_triggered")
-                            )
-                        return output
+                            ), usage_acc
+                        return output, usage_acc
 
                     else:
                         try:
@@ -73,7 +92,7 @@ def run_agent(case_id: str, messages: list[dict], tools: list[dict], tool_functi
             description="Agent failed to submit within max iterations.",
             confidence=0.0,
             grounding=Grounding(transaction_ids=[], signal="max iterations reached")
-        )
+        ), usage_acc
                     
 
 
