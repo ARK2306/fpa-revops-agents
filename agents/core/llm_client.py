@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 from langfuse.openai import OpenAI
 import os
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import openai
 
 load_dotenv()
 
@@ -13,6 +15,12 @@ client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY")
 )
 
+@retry(
+        retry=retry_if_exception_type((openai.RateLimitError, openai.APIStatusError)),
+        wait=wait_exponential(multiplier=1,min=1,max=30),
+        stop=stop_after_attempt(4),
+        reraise=True
+)
 def complete(
         messages: list[dict],
         model: str = MODEL_1,
@@ -28,6 +36,12 @@ def complete(
     )
     return completion.choices[0].message.content
 
+@retry(
+        retry=retry_if_exception_type((openai.RateLimitError, openai.APIStatusError)),
+        wait=wait_exponential(multiplier=1,min=1,max=30),
+        stop=stop_after_attempt(4),
+        reraise=True
+)
 def complete_with_tools(
     messages: list[dict],
     tools: list[dict],

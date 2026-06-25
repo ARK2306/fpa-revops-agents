@@ -1,6 +1,8 @@
 from evals.schemas import AgentOutput, CaseInput
 from core.loop import run_agent
 from domain_fpa.tools import ALL_TOOLS, TOOL_FUNCTIONS
+from domain_fpa.memory import case_to_text
+from core.memory import retrieve
 import json
 
 SYSTEM_PROMPT = """
@@ -41,6 +43,11 @@ between flag and escalate, escalate.
   If mean amount per row is up ~X% but row count is roughly the same, 
   that's a price/rate shift. If row count is up but mean amount per row 
   is similar, that's volume_change.
+    IMPORTANT: if row count is significantly higher AND per-row amounts are also
+    significantly higher than prior periods simultaneously (both metrics point to
+    more spend), you cannot cleanly isolate price from volume. Escalate with
+    driver_type="none". If one dimension is clearly dominant (e.g. row count doubled
+    but per-row amount is within 10% of prior periods), name that driver.
 - volume_change: more or fewer transaction rows than normal for this account 
   and period. To detect: compare row count in current period vs prior periods 
   using get_transactions. If count is up significantly but per-row amounts 
@@ -51,13 +58,22 @@ identify the nature of the item, escalate instead of flagging. Legal or
 financial settlement language (e.g. "Settlement payment", "Settlement fee")
 always escalates — settlements require human confirmation regardless of amount.
 - timing_accrual: transactions dated in a different period than they are posted to
-- data_error: description vocabulary belongs to a clearly different account \
-  category. To detect: the descriptions must use terminology from a wrong \
-  domain entirely — e.g. "Payroll expense" or "Employee benefits" in \
-  a Software Revenue account. Unfamiliar or generic descriptions alone are \
-  NOT data_error. Only escalate for data_error when the vocabulary mismatch \
-  is unambiguous.
-- none: no material variance
+- data_error: description vocabulary belongs to a clearly different account
+  category. To detect: BEFORE interpreting volume or price patterns, read the
+  transaction descriptions and ask — do these belong in this account type?
+  e.g. "Payroll expense" or "Employee benefits" in a Software Revenue account,
+  or "Cloud hosting" / "AWS invoice" in a Payroll account. If the vocabulary
+  mismatch is unambiguous, that is data_error regardless of what the numbers show.
+  Unfamiliar or generic descriptions alone are NOT data_error — the mismatch
+  must be domain-level (cost vocabulary in a revenue account, or vice versa).
+  data_error always escalates even when you are confident.
+- none: either (a) no material variance, or (b) variance is material but the
+  transaction description is too vague to identify the driver type — e.g. a
+  single large "Miscellaneous charges" entry, or a settlement where the nature
+  is unconfirmed. Use driver_type="none" when the shape suggests a driver but
+  the description is insufficient to name it. This applies even when you escalate:
+  if you are escalating because description is insufficient, set driver_type="none",
+  not one_time_item.
 
 ## Grounding rule — CRITICAL
 Every flag or escalate MUST cite specific transaction_ids as evidence.
@@ -72,21 +88,38 @@ do_nothing requires no driver — set driver_type to "none".
 """
 
 def run_fpa_agent(case_id: str, case_input: CaseInput) -> AgentOutput:
-    transactions_json = json.dumps(
-    [t.model_dump() for t in case_input.transactions],
-    indent=2,
-    default=str
-)
+    
+    # 1. retrieve similar past cases
+    query_text = (
+        f"account_id={case_input.account_id} "
+        f"period={case_input.period} "
+        f"description=variance analysis"
+    )
+    similar_cases = retrieve(query_text, k=3)
+
+    memory_block = (
+    "## Precedent cases — similar past periods with confirmed outcomes\n"
+    "If a precedent case matches this account and pattern, weight it heavily before deciding action.\n")
+    for c in similar_cases:
+        memory_block += (
+            f"Case {c['case_id']}: confirmed {c['confirmed_action']} / {c['confirmed_driver']}\n"
+            f"  {c['description']}\n"
+        )
+
+    # 3. inject into system prompt
+    system_with_memory = SYSTEM_PROMPT + "\n" + memory_block
+
     user_message = f"""
 Analyze this period for material variances:
 - Period: {case_input.period}
 - Account: {case_input.account_id}
 - Budget: {case_input.budget}
 
-Start by calling query_actuals and query_budget to compute the variance, then get_transactions to find the driver. Submit your findings using the submit tool.
+Start by calling query_actuals and query_budget to compute the variance, 
+then get_transactions to find the driver. Submit your findings using the submit tool.
 """
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_with_memory},
         {"role": "user", "content": user_message}
     ]
     
