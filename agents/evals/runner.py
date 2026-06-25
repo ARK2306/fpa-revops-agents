@@ -4,12 +4,14 @@ from sklearn.metrics import precision_recall_fscore_support
 from core.llm_client import complete
 from domain_fpa.agent import run_fpa_agent
 from collections import Counter
+from memory.store import persist_run
 import json
+import argparse
 
-def run_case(case: GoldenCase, agent_fn) -> AgentOutput:
+def run_case(case: GoldenCase, agent_fn) -> tuple:
     # calls agent_fn with case.input, injects case_id, returns AgentOutput
-    result = agent_fn(case.case_id, case.input)
-    return result
+    output, usage = agent_fn(case.case_id, case.input)
+    return output, usage
 
 def score_detection(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
     # computes precision / recall / F1
@@ -102,7 +104,6 @@ def score_actions(cases: list[GoldenCase], outputs: list[AgentOutput], n_total: 
 
  
 def main():
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--cases", type=str, default=None,
         help="Comma-separated case IDs to run, e.g. --cases fpa_014,fpa_015,fpa_016")
@@ -123,9 +124,10 @@ def main():
     for case in cases:
         print(f"Running {case.case_id}...")
         try:
-            result = run_case(case, run_fpa_agent)
+            result, usage = run_case(case, run_fpa_agent)   # unpack
+            run_id = persist_run(result, usage)              
             outputs.append(result)
-            print(f"  OK: {result.action}")
+            print(f"  OK: {result.action} | run_id: {run_id[:8]}... | cost: ${usage.cost_usd:.6f}")
         except Exception as e:
             print(f"  FAILED: {e}")
             failures.append(case.case_id)

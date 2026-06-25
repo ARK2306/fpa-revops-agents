@@ -87,7 +87,7 @@ do_nothing requires no driver — set driver_type to "none".
 - 0.0-0.4: evidence is genuinely ambiguous — you cannot settle on a single driver.
 """
 
-def run_fpa_agent(case_id: str, case_input: CaseInput) -> AgentOutput:
+def run_fpa_agent(case_id: str, case_input: CaseInput) -> tuple:
     
     # 1. retrieve similar past cases
     query_text = (
@@ -122,10 +122,10 @@ then get_transactions to find the driver. Submit your findings using the submit 
         {"role": "system", "content": system_with_memory},
         {"role": "user", "content": user_message}
     ]
-    output, _ = run_agent(
+    output, usage = run_agent(
     case_id=case_id,
     messages=messages,
     tools=ALL_TOOLS,
     tool_functions=TOOL_FUNCTIONS
 )
-    return output
+    return output, usage
