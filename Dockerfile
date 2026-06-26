@@ -4,10 +4,12 @@ WORKDIR /app
 
 RUN pip install uv --no-cache-dir
 
-COPY agents/pyproject.toml agents/uv.lock* ./
+# pyproject.toml is at repo root
+COPY pyproject.toml uv.lock* ./
 
 RUN uv sync --frozen --no-dev
 
+# copy agents source into /app
 COPY agents/ .
 
 EXPOSE 8080
