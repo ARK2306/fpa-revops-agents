@@ -1,4 +1,4 @@
-from evals.schemas import AgentOutput, CaseInput
+from evals.schemas import AgentOutput, CaseInput, LiveCaseInput
 from core.loop import run_agent
 from domain_fpa.tools import ALL_TOOLS, TOOL_FUNCTIONS
 from domain_fpa.memory import case_to_text
@@ -87,7 +87,7 @@ do_nothing requires no driver — set driver_type to "none".
 - 0.0-0.4: evidence is genuinely ambiguous — you cannot settle on a single driver.
 """
 
-def run_fpa_agent(case_id: str, case_input: CaseInput) -> tuple:
+def run_fpa_agent(case_id: str, case_input: CaseInput | LiveCaseInput) -> tuple:
     
     # 1. retrieve similar past cases
     query_text = (

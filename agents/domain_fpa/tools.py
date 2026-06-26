@@ -1,12 +1,36 @@
 import pandas as pd
+from domain_fpa.normalizer import REQUIRED_COLUMNS
 
 TRANSACTIONS_PATH = "data/transactions.csv"
 BUDGET_PATH = "data/budget.csv"
 
+# --- session context ---
+_session_df: dict[str, pd.DataFrame] = {}
+_current_session: str | None = None
+
+def set_session(session_id: str):
+    global _current_session
+    _current_session = session_id
+
+def register_session_data(session_id: str, df: pd.DataFrame):
+    """Store a normalized dataframe under a session_id."""
+    missing = set(REQUIRED_COLUMNS) - set(df.columns)
+    if missing:
+        raise ValueError(f"Normalized df missing columns: {missing}")
+    _session_df[session_id] = df
+
 def _load_transactions() -> pd.DataFrame:
+    if _current_session and _current_session in _session_df:
+        return _session_df[_current_session]
     df = pd.read_csv(TRANSACTIONS_PATH)
     df["account_id"] = df["account_id"].astype(str)
     return df
+
+def _load_budget() -> pd.DataFrame:
+    df = pd.read_csv(BUDGET_PATH)
+    df["account_id"] = df["account_id"].astype(str)
+    return df
+
 
 def query_actuals(period: str, account_id: str | None = None) -> list[dict]:
     df = _load_transactions()

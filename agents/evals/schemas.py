@@ -41,5 +41,9 @@ class AgentOutput(BaseModel):
     grounding: Grounding
     confidence: float
 
+class LiveCaseInput(BaseModel):
+    period: str
+    account_id: str
+    budget: float
 
 

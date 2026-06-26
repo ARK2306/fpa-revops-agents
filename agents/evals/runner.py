@@ -7,6 +7,10 @@ from collections import Counter
 from memory.store import persist_run
 import json
 import argparse
+import time
+
+
+JUDGE_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
 def run_case(case: GoldenCase, agent_fn) -> tuple:
     # calls agent_fn with case.input, injects case_id, returns AgentOutput
@@ -60,7 +64,8 @@ def score_driver(cases: list[GoldenCase], outputs: list[AgentOutput]) -> dict:
             """}
         ]
         
-        response = complete(messages)
+        response = complete(messages, model=JUDGE_MODEL)
+        time.sleep(4)
         clean = response.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         if not clean:
             score.append(0.0)
