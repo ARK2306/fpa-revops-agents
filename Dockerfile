@@ -4,11 +4,11 @@ WORKDIR /app
 
 RUN pip install uv --no-cache-dir
 
-COPY pyproject.toml uv.lock* ./
+COPY agents/pyproject.toml agents/uv.lock* ./
 
 RUN uv sync --frozen --no-dev
 
-COPY . .
+COPY agents/ .
 
 EXPOSE 8080
 
