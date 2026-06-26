@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
 import PipelineView from './components/PipelineView'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'https://fpa-api-182571398865.us-central1.run.app'
 
 export default function App() {
   const [view, setView] = useState('chat')
