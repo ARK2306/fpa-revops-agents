@@ -9,8 +9,8 @@ steps:
         "-t",
         "us-central1-docker.pkg.dev/aviclear-497604/cloud-run-source-deploy/fpa-revops-agents/fpa-api:latest",
         "-f",
-        "agents/Dockerfile",
-        "./agents",
+        "Dockerfile",
+        ".",
       ]
 
 images:
